@@ -12,12 +12,7 @@ from avatar.forms import AvatarForm
 from .utils import mkdir, mkdirbysize, mkdirbydate, safefilename, thumbnail
 
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-
-@app.route('/avatar', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def avatar():
     form = AvatarForm()
     if request.method == 'POST':
