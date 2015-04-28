@@ -18,9 +18,14 @@ pubsub_channel = 'task:pubsub:channel'
 def index():
 
     html = """
-<h3>Redis Message Queue</h3>
+<br>
+<center><h3>Redis Message Queue</h3>
+<br>
 <a href="/prodcons">生产消费者模式</a>
+<br>
+<br>
 <a href="/pubsub">发布订阅者模式</a>
+</center>
 """
     return html
 
