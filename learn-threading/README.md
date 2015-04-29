@@ -132,9 +132,7 @@ def main():
         MyThread().start()
 
     print "End Main threading"
-
-
-main()
+    
 ```
 输出结果如下，十个线程，每个线程增加100，运算结果应该是1000：
 
@@ -176,9 +174,6 @@ class MyThread(threading.Thread):
 
 ```python
 
-import time
-import threading
-
 mutex_a = threading.Lock()
 mutex_b = threading.Lock()
 
@@ -216,9 +211,6 @@ def main():
         t.start()
 
     print "End Main threading"
-
-if __name__ == '__main__':
-    main()
 
 ```
 
@@ -261,11 +253,6 @@ def main():
 
 ```python
 
-import threading
-import random
-import time
-
-
 queue = []
 
 con = threading.Condition()
@@ -303,10 +290,6 @@ def main():
 
     for i in range(2):
         Consumer().start()
-
-if __name__ == '__main__':
-    main()
-
 ```
 
 上述就是一个简单的生产者消费模型，我们来看生产者，生产者条件变量锁之后就检查条件，如果不符合条件则wait，wait的时候会释放锁。如果条件符合，则往队列添加元素，然后会notify其他线程。注意生产者调用了condition的notify()方法后，消费者被唤醒，但唤醒不意味着它可以开始运行，notify()并不释放lock，调用notify()后，lock依然被生产者所持有。生产者通过con.release()显式释放lock。消费者再次开始运行，获得条件锁然后判断条件执行。
@@ -317,9 +300,7 @@ if __name__ == '__main__':
 生产消费者模型主要是对队列进程操作，贴心的Python为我们实现了一个队列结构，队列内部实现了锁的相关设置。可以用队列重写生产消费者模型。
 
 ```python
-import threading
-import time
-import random
+
 import Queue
 
 queue = Queue.Queue(10)
@@ -356,16 +337,82 @@ queue内部实现了相关的锁，如果queue的为空，则get元素的时候�
 
 ### 线程通信
 
-默认情况下，主线程退出之后，即使子线程没有join。那么主线程结束后，子线程也依然会继续执行。如果希望主线程退出后，其子线程也退出而不再执行，则需要设置子线程为后台线程。python提供了seDeamon方法：
+线程可以读取共享的内存，通过内存做一些数据处理。这就是线程通信的一种，python还提供了更加高级的线程通信接口。`Event`对象可以用来进行线程通信，调用event对象的`wait`方法，线程则会阻塞等待，直到别的线程`set`之后，才会被唤醒。
+
 
 ```python
+class MyThread(threading.Thread):
+    def __init__(self, event):
+        super(MyThread, self).__init__()
+        self.event = event
 
 
+    def run(self):
+        print "thread {} is ready ".format(self.name)
+        self.event.wait()
+        print "thread {} run".format(self.name)
+
+signal = threading.Event()
+
+def main():
+    start = time.time()
+    for i in range(3):
+        t = MyThread(signal)
+        t.start()
+    time.sleep(3)
+    print "after {}s".format(time.time() - start)
+    signal.set()
 
 ```
 
+上面的例子创建了3个线程，调用线程之后，线程将会被阻塞，sleep 3秒后，才会被唤醒执行，大概输出如下：
 
+```
+thread Thread-1 is ready 
+ thread Thread-2 is ready 
+thread Thread-3 is ready 
+after 3.00441598892s
+thread Thread-2 run
+thread Thread-3 run
+thread Thread-1 run
+
+```
 
 ### 后台线程
 
 
+默认情况下，主线程退出之后，即使子线程没有join。那么主线程结束后，子线程也依然会继续执行。如果希望主线程退出后，其子线程也退出而不再执行，则需要设置子线程为后台线程。python提供了seDeamon方法：
+
+```python
+
+class MyThread(threading.Thread):
+
+    def run(self):
+        wait_time = random.randrange(1, 10)
+        print "thread {} will wait {}s".format(self.name, wait_time)
+        time.sleep(wait_time)
+        print "thread {} finished".format(self.name)
+
+def main():
+    print "Start main threading"
+    for i in range(5):
+        t = MyThread()
+        t.setDaemon(True)
+        t.start()
+
+    print "End Main threading"
+
+```
+
+输出结果如下：
+```
+Start main threading
+thread Thread-1 will wait 3s
+thread Thread-2 will wait 6s
+thread Thread-3 will wait 4s
+thread Thread-4 will wait 6s
+thread Thread-5 will wait 2sEnd Main threading
+
+```
+
+每个线程都应该等待sleep几秒，可是主线程很快就执行完了，子线程因为设置了后台线程，所以也跟着主线程退出了。
