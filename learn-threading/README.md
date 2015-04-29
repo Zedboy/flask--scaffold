@@ -112,3 +112,67 @@ Process finished with exit code 0
 
 
 ### 线程同步与互斥锁
+
+线程之所以比进程轻量，其中一个原因就是他们共享内存。也就是各个线程可以平等的访问内存的数据，如果在短时间“同时并行”读取修改内存的数据，很可能造成数据不同步。例如下面的例子：
+
+```python
+count = 0
+class MyThread(threading.Thread):
+    def run(self):
+        global count
+        time.sleep(1)
+        for i in range(100):
+            count += 1
+        print 'thread {} add 1, count is {}'.format(self.name, count)
+
+
+def main():
+    print "Start main threading"
+    for i in range(10):
+        MyThread().start()
+
+    print "End Main threading"
+
+
+main()
+```
+输出结果如下，十个线程，每个线程增加100，运算结果应该是1000：
+
+Start main threading
+End Main threading
+thread Thread-6 add 1, count is 161thread Thread-1 add 1, count is 433
+thread Thread-7 add 1, count is 482
+thread Thread-2 add 1, count is 100
+ thread Thread-9 add 1, count is 125
+
+thread Thread-8 add 1, count is 335
+ thread Thread-5 add 1, count is 533thread Thread-3 add 1, count is 533
+ thread Thread-10 add 1, count is 261
+
+thread Thread-4 add 1, count is 308
+
+为了避免线程不同步造成是数据不同步，可以对资源进行加锁。也就是访问资源的线程需要获得锁，才能访问。threading模块正好提供了一个Lock功能，修改代码如下：
+
+```python
+# 创建锁
+mutex = threading.Lock()
+
+class MyThread(threading.Thread):
+    def run(self):
+        global count
+        time.sleep(1)
+        # 获取锁，修改资源
+        if mutex.acquire():
+            for i in range(100):
+                count += 1
+            print 'thread {} add 1, count is {}'.format(self.name, count)
+            # 释放锁
+            mutex.release()
+```
+
+### 死锁
+
+有锁就可以方便处理线程同步问题，可是多线程的复杂度和难以调试的根源也来自于线程的锁。利用不当，甚至会带来更多问题。比如死锁就是需要避免的问题。
+
+
+
