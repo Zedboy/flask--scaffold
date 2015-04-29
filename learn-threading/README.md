@@ -174,5 +174,83 @@ class MyThread(threading.Thread):
 
 有锁就可以方便处理线程同步问题，可是多线程的复杂度和难以调试的根源也来自于线程的锁。利用不当，甚至会带来更多问题。比如死锁就是需要避免的问题。
 
+```python
 
+import time
+import threading
 
+mutex_a = threading.Lock()
+mutex_b = threading.Lock()
+
+class MyThread(threading.Thread):
+
+    def task_a(self):
+        if mutex_a.acquire():
+            print "thread {} get mutex a ".format(self.name)
+            time.sleep(1)
+            if mutex_b.acquire():
+                print "thread {} get mutex b ".format(self.name)
+                mutex_b.release()
+            mutex_a.release()
+
+    def task_b(self):
+
+        if mutex_b.acquire():
+            print "thread {} get mutex a ".format(self.name)
+            time.sleep(1)
+            if mutex_a.acquire():
+                print "thread {} get mutex b ".format(self.name)
+                mutex_a.release()
+            mutex_b.release()
+
+    def run(self):
+        self.task_a()
+        self.task_b()
+
+def main():
+    print "Start main threading"
+
+    threads = [MyThread() for i in range(2)]
+
+    for t in threads:
+        t.start()
+
+    print "End Main threading"
+
+if __name__ == '__main__':
+    main()
+
+```
+
+线程需要执行两个任务，两个任务都需要获取锁，然而两个任务先得到锁后，就需要等另外锁释放。
+
+### 可重入锁
+
+为了支持在同一线程中多次请求同一资源，python提供了`可重入锁`（RLock）。RLock内部维护着一个Lock和一个counter变量，counter记录了acquire的次数，从而使得资源可以被多次require。直到一个线程所有的acquire都被release，其他的线程才能获得资源。
+
+```python
+
+mutex = threading.RLock()
+
+class MyThread(threading.Thread):
+
+    def run(self):
+        if mutex.acquire(1):
+            print "thread {} get mutex".format(self.name)
+            time.sleep(1)
+            mutex.acquire()
+            mutex.release()
+            mutex.release()
+
+def main():
+    print "Start main threading"
+
+    threads = [MyThread() for i in range(2)]
+    for t in threads:
+        t.start()
+
+    print "End Main threading"
+
+```
+
+### 条件变量
