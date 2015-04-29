@@ -17,7 +17,7 @@ class Producer(threading.Thread):
     def run(self):
         while True:
             if con.acquire():
-                if len(queue) > 100:
+                if len(queue) >= 10:
                     con.wait()
                 else:
                     elem = random.randrange(100)

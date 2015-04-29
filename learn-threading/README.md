@@ -56,7 +56,7 @@ thread Thread-3, @number: 3
 每个线程都依次打印 0 - 3 三个数字，可是从输出的结果，我们看到线程并不是顺序的执行，而是三个线程之间相互交替执行。此外，我们的主线程执行结束，将会打印 `End Main threading`。从输出结果可以知道，主线程结束后，新建的线程还在运行。
 
 
-### 线程`join`方法
+### 线程合并（join方法）
 
 上述的例子中，主线程结束了，子线程还在运行。如果需要主线程等待子线程执行完毕再退出，可是使用线程的`join`方法。join方法官网文档大概是
 
@@ -308,4 +308,64 @@ if __name__ == '__main__':
     main()
 
 ```
+
+上述就是一个简单的生产者消费模型，我们来看生产者，生产者条件变量锁之后就检查条件，如果不符合条件则wait，wait的时候会释放锁。如果条件符合，则往队列添加元素，然后会notify其他线程。注意生产者调用了condition的notify()方法后，消费者被唤醒，但唤醒不意味着它可以开始运行，notify()并不释放lock，调用notify()后，lock依然被生产者所持有。生产者通过con.release()显式释放lock。消费者再次开始运行，获得条件锁然后判断条件执行。
+
+
+### 队列
+
+生产消费者模型主要是对队列进程操作，贴心的Python为我们实现了一个队列结构，队列内部实现了锁的相关设置。可以用队列重写生产消费者模型。
+
+```python
+import threading
+import time
+import random
+import Queue
+
+queue = Queue.Queue(10)
+
+class Producer(threading.Thread):
+
+    def run(self):
+        while True:
+            elem = random.randrange(100)
+            queue.put(elem)
+            print "Producer a elem {}, Now size is {}".format(elem, queue.qsize())
+            time.sleep(random.random())
+
+class Consumer(threading.Thread):
+
+    def run(self):
+        while True:
+            elem = queue.get()
+            queue.task_done()
+            print "Consumer a elem {}. Now size is {}".format(elem, queue.qsize())
+            time.sleep(random.random())
+
+def main():
+
+    for i in range(3):
+        Producer().start()
+
+    for i in range(2):
+        Consumer().start()
+
+```
+
+queue内部实现了相关的锁，如果queue的为空，则get元素的时候会被阻塞，知道队列里面被其他线程写入数据。同理，当写入数据的时候，如果元素个数大于队列的长度，也会被阻塞。也就是在 put 或 get的时候都会获得Lock。
+
+### 线程通信
+
+默认情况下，主线程退出之后，即使子线程没有join。那么主线程结束后，子线程也依然会继续执行。如果希望主线程退出后，其子线程也退出而不再执行，则需要设置子线程为后台线程。python提供了seDeamon方法：
+
+```python
+
+
+
+```
+
+
+
+### 后台线程
+
 
