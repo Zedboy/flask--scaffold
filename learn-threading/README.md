@@ -459,7 +459,11 @@ thread Thread-5 will wait 2sEnd Main threading
 每个线程都应该等待sleep几秒，可是主线程很快就执行完了，子线程因为设置了后台线程，所以也跟着主线程退出了。
 
 
+
 参考资料：
 
 [1]: http://www.cnblogs.com/holbrook/tag/%E5%A4%9A%E7%BA%BF%E7%A8%8B/
 [2]: http://zhuoqiang.me/python-thread-gil-and-ctypes.html
+
+
+文中的代码 [learn-threading](https://github.com/rsj217/flask--scaffold/tree/master/learn-threading)
